@@ -17,6 +17,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | Versão pública exibida no rodapé. Lida do arquivo `version.md` na raiz do
+    | projeto — versionada no git (ao contrário do .env). Segue a convenção
+    | X.Y.Z descrita no README. Fallback para APP_VERSION (env) se o arquivo
+    | não existir, e 0.0.0 em último caso.
+    |
+    */
+
+    'version' => (function () {
+        $path = dirname(__DIR__).'/version.md';
+        if (is_readable($path)) {
+            $value = trim((string) @file_get_contents($path));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return env('APP_VERSION', '0.0.0');
+    })(),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

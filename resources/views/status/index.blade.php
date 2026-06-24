@@ -95,6 +95,7 @@
         <footer class="py-6 text-center text-xs text-slate-400">
             Blue3 — Provedor de Internet ·
             <a href="https://blue3.com.br" class="transition hover:text-slate-600">blue3.com.br</a>
+            · v{{ config('app.version', '0.0.0') }}
         </footer>
     </div>
 </body>

@@ -49,5 +49,9 @@
 
         @yield('content')
     </main>
+
+    <footer class="mx-auto max-w-5xl px-4 py-6 text-center text-xs text-slate-400">
+        Blue3 Status — Painel · v{{ config('app.version', '0.0.0') }}
+    </footer>
 </body>
 </html>
