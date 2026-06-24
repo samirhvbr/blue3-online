@@ -39,7 +39,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # ── Config ────────────────────────────────────────────────────────────────────
-DIR="/srv/www/blue3.online"
+DIR="/srv/www/online.blue3"
 BRANCH="${DEPLOY_BRANCH:-master}"
 LOCK="${DIR}/.deploy.lock"
 BACKUP_DIR="/var/backups/blue3-online"
