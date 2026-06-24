@@ -1,0 +1,69 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* ── Paleta de status (página estilo status.claude.com) ──────────────────── */
+:root {
+    --st-operational: #18a558;
+    --st-degraded: #e0a008;
+    --st-partial: #e8730b;
+    --st-major: #d64545;
+    --st-maintenance: #3b73d6;
+    --st-empty: #e6e9ee;
+}
+
+/* Modificador por valor do enum ComponentStatus — define a cor --st. */
+.st--operational    { --st: var(--st-operational); }
+.st--degraded       { --st: var(--st-degraded); }
+.st--partial_outage { --st: var(--st-partial); }
+.st--major_outage   { --st: var(--st-major); }
+.st--maintenance    { --st: var(--st-maintenance); }
+
+.st-dot {
+    display: inline-block;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 9999px;
+    background: var(--st, var(--st-operational));
+}
+
+.st-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--st, var(--st-operational));
+    background: color-mix(in srgb, var(--st, var(--st-operational)) 14%, white);
+}
+
+/* Barra de uptime — 90 segmentos diários. */
+.uptime-bar {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+    height: 30px;
+}
+
+.uptime-bar .seg {
+    flex: 1 1 0;
+    min-width: 0;
+    border-radius: 2px;
+    background: var(--st, var(--st-empty));
+    transition: opacity 0.15s ease;
+}
+
+.uptime-bar .seg:hover {
+    opacity: 0.55;
+}

@@ -89,14 +89,15 @@ saúde que outros sistemas (INTRANET) consomem.
 - Repo **greenfield**: `git@github.com:BLUE3-ISP/ONLINE.git`, branch `master`, 2 commits
   (`9c20a3a first commit`, `f5f2b4b Start Default`). README só `# ONLINE`.
 - `.claude/` já configurado no padrão Blue3 (perfis Opus/Fable, permissões) e versionado.
-- `.continue/` (este doc + `SAMIR.md`) e `deploy.sh` ainda **não commitados**.
-- **`deploy.sh`** criado (padrão Laravel WCUP/INTRANET, alvo `/srv/www/blue3.online`) — pressupõe a app Laravel, que **ainda não existe** (só roda depois do bootstrap).
-- **Sem código de aplicação** — nada implementado além do deploy.
+- **Commit `c1d6c89`**: `deploy.sh` (padrão WCUP/INTRANET, alvo `/srv/www/blue3.online`) + `.continue/`.
+- **Laravel 12** instalado (Tailwind v4 + Vite, igual ao WCUP). `.env` em MySQL + drivers `file`/`sync` → roda local **sem banco**.
+- **Página pública `/`** estilo status.claude.com **pronta e validada** (HTTP 200, `npm run build` OK, screenshot conferido): banner geral, componentes (POPs/Serviços) com pílula de status + barras de uptime 90 dias, histórico de incidentes. Dados **mock** em `app/Services/StatusService.php` (`app/Enums/ComponentStatus.php`, `StatusController`, `resources/views/status/index.blade.php`).
+- **A app Laravel + a página ainda NÃO estão commitadas** (aguardando review).
 
 ## Próximos passos sugeridos
 
 1. ~~Fechar a decisão de stack (#1)~~ ✅ Laravel (via `deploy.sh`).
-2. **Bootstrap da app Laravel** + **página pública estática** estilo status.claude.com (componentes mock). Sem isso o `deploy.sh` não roda.
+2. ~~Bootstrap da app Laravel + página pública estilo status.claude.com (mock)~~ ✅ feito (24/06).
 3. **Modelo de dados:** sondas, alvos, medições, incidentes.
 4. **API de ingestão** (sonda→central) com auth por token.
 5. **Script bash da sonda** (ping → POST), provisionável em Debian leve.
