@@ -92,7 +92,8 @@ saúde que outros sistemas (INTRANET) consomem.
 - **Commit `c1d6c89`**: `deploy.sh` (padrão WCUP/INTRANET, alvo `/srv/www/blue3.online`) + `.continue/`.
 - **Laravel 12** instalado (Tailwind v4 + Vite, igual ao WCUP). `.env` em MySQL + drivers `file`/`sync` → roda local **sem banco**.
 - **Página pública `/`** estilo status.claude.com **pronta e validada** (HTTP 200, `npm run build` OK, screenshot conferido): banner geral, componentes (POPs/Serviços) com pílula de status + barras de uptime 90 dias, histórico de incidentes. Dados **mock** em `app/Services/StatusService.php` (`app/Enums/ComponentStatus.php`, `StatusController`, `resources/views/status/index.blade.php`).
-- **A app Laravel + a página ainda NÃO estão commitadas** (aguardando review).
+- **Commit `705ab72`**: bootstrap Laravel 12 + página pública de status (mock).
+- **Em produção (`blue3.online`) deu HTTP 500** na 1ª subida — ver seção Deploy/Produção (faltava `npm run build`/`vendor`/`APP_KEY` no servidor). Criado `setup.sh` para resolver.
 
 ## Próximos passos sugeridos
 
@@ -105,6 +106,14 @@ saúde que outros sistemas (INTRANET) consomem.
 7. **Cálculo de status** + histórico/uptime + timeline de incidentes.
 8. **Integração INTRANET** (alerta).
 9. **Endurecer auth**: trocar senha de bootstrap, sem hardcode.
+
+## Deploy / Produção
+
+- **Servidor:** `DIR=/srv/www/online.blue3`; docroot do webserver → `$DIR/public`.
+- **`setup.sh` (1ª vez, idempotente):** provisiona um clone novo — `.env` (de `.env.example`) + `key:generate`, `composer install`, `npm ci && npm run build`, `storage:link`, permissões. Rodar como root **uma vez** após o `git clone`.
+- **`deploy.sh` (updates):** fetch + ff-merge + composer/migrate/npm condicionais + caches. ⚠️ É **só UPDATE**: num clone já na HEAD do origin sai em "Nada novo" e **não** roda composer/npm — por isso a 1ª subida é o `setup.sh`.
+- **`.env` de produção:** `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://blue3.online`.
+- **Causa do HTTP 500 inicial (24/06):** `public/build` é gitignored; sem `npm run build` no servidor o `@vite` quebra → 500 (em branco com `APP_DEBUG=false`). Idem se faltar `vendor/` ou `APP_KEY`. Diagnóstico: conferir `public/build/manifest.json`, `vendor/autoload.php`, `APP_KEY` no `.env` e `storage/logs/laravel.log`.
 
 ## Referências
 
