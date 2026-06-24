@@ -3,55 +3,54 @@
 namespace App\Services;
 
 use App\Enums\ComponentStatus;
+use App\Models\ComponentGroup;
+use App\Models\Incident;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * Fonte dos dados da página de status.
+ * Monta os dados da página de status a partir do banco.
  *
- * ATENÇÃO: dados MOCK. Quando as sondas externas estiverem reportando para o
- * banco, trocar `groups()`/`incidents()` por leitura real (medições agregadas
- * por componente). A camada de view não muda — só a origem dos dados.
+ * - Status atual de cada componente: definido no admin (campo `status`).
+ * - Histórico de 90 dias e uptime: derivados dos incidentes que impactaram o
+ *   componente (incidente sem componente = global, afeta todos).
+ * - Quando houver sondas, elas passam a gravar medições/incidentes e este
+ *   serviço continua igual — só a origem dos dados muda.
  */
 class StatusService
 {
     private const HISTORY_DAYS = 90;
 
     private ?array $groups = null;
+    private ?Collection $incidents = null;
 
-    /**
-     * Componentes agrupados (POPs e serviços), cada um com status atual,
-     * uptime e histórico dos últimos 90 dias.
-     */
     public function groups(): array
     {
-        return $this->groups ??= [
-            [
-                'name' => 'POPs',
-                'components' => [
-                    $this->component('POP Centro'),
-                    $this->component('POP Zona Sul', [40 => ComponentStatus::Degraded]),
-                    $this->component('POP Industrial'),
-                    $this->component('POP Litoral', [
-                        83 => ComponentStatus::PartialOutage,
-                        82 => ComponentStatus::Degraded,
-                    ]),
-                ],
-            ],
-            [
-                'name' => 'Serviços',
-                'components' => [
-                    $this->component('Site institucional (blue3.com.br)', [12 => ComponentStatus::Degraded]),
-                    $this->component('Central do Assinante'),
-                    $this->component('DNS recursivo', [72 => ComponentStatus::Degraded]),
-                    $this->component('Servidor de e-mail', [55 => ComponentStatus::Degraded]),
-                    $this->component('Backbone / Trânsito IP', [63 => ComponentStatus::Maintenance]),
-                ],
-            ],
-        ];
+        if ($this->groups !== null) {
+            return $this->groups;
+        }
+
+        $incidents = $this->incidentRecords();
+
+        return $this->groups = ComponentGroup::with('components')
+            ->orderBy('position')
+            ->get()
+            ->map(fn (ComponentGroup $group) => [
+                'name' => $group->name,
+                'components' => $group->components->map(function ($component) use ($incidents) {
+                    $history = $this->history($component->id, $incidents);
+
+                    return [
+                        'name' => $component->name,
+                        'status' => $component->status,
+                        'history' => $history,
+                        'uptime' => $this->uptime($history),
+                    ];
+                })->all(),
+            ])->all();
     }
 
-    /** Pior status entre todos os componentes — alimenta o banner geral. */
+    /** Pior status atual entre todos os componentes — alimenta o banner geral. */
     public function overall(): ComponentStatus
     {
         $worst = ComponentStatus::Operational;
@@ -67,92 +66,101 @@ class StatusService
         return $worst;
     }
 
-    /** Incidentes recentes (resolvidos/concluídos). */
+    /** Incidentes recentes (mais novos primeiro) para a timeline pública. */
     public function incidents(): array
     {
-        return [
-            [
-                'title' => 'Perda de pacotes no POP Litoral',
-                'detail' => 'Oscilação no enlace de trânsito IP do POP Litoral causou perda de pacotes e latência elevada para parte dos assinantes. Mitigado com remanejamento de rota; enlace normalizado.',
-                'date' => '18 jun. 2026, 14:03',
-                'duration' => '42 min',
-                'badge' => ComponentStatus::Operational,
-                'badge_label' => 'Resolvido',
-            ],
-            [
-                'title' => 'Lentidão no DNS recursivo',
-                'detail' => 'Aumento do tempo de resposta nos resolvedores recursivos após pico de consultas. Capacidade ampliada e cache aquecido.',
-                'date' => '07 jun. 2026, 09:21',
-                'duration' => '17 min',
-                'badge' => ComponentStatus::Operational,
-                'badge_label' => 'Resolvido',
-            ],
-            [
-                'title' => 'Manutenção programada no Backbone',
-                'detail' => 'Upgrade de firmware nos roteadores de núcleo em janela de baixo tráfego. Sem impacto perceptível aos assinantes.',
-                'date' => '29 mai. 2026, 02:00',
-                'duration' => '1 h 10 min',
-                'badge' => ComponentStatus::Maintenance,
-                'badge_label' => 'Concluído',
-            ],
-        ];
+        return $this->incidentRecords()
+            ->take(10)
+            ->map(function (Incident $incident) {
+                $resolved = $incident->isResolved();
+                $maintenance = $incident->impact === ComponentStatus::Maintenance;
+
+                return [
+                    'title' => $incident->title,
+                    'detail' => $incident->detail,
+                    'date' => $this->dateLabel($incident->started_at),
+                    'duration' => $this->durationLabel($incident),
+                    'badge' => $resolved ? ($maintenance ? ComponentStatus::Maintenance : ComponentStatus::Operational) : $incident->impact,
+                    'badge_label' => $resolved ? ($maintenance ? 'Concluído' : 'Resolvido') : 'Em andamento',
+                ];
+            })->values()->all();
     }
 
-    /** Carimbo "Atualizado em ..." em pt-BR, sem depender de locale do sistema. */
     public function lastUpdatedLabel(): string
     {
-        $now = Carbon::now();
-        $months = [1 => 'jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+        return $this->dateLabel(Carbon::now());
+    }
 
-        return sprintf(
-            '%s %s %s, %s',
-            $now->format('d'),
-            $months[(int) $now->format('n')],
-            $now->format('Y'),
-            $now->format('H:i')
+    private function incidentRecords(): Collection
+    {
+        return $this->incidents ??= Incident::query()->orderByDesc('started_at')->get();
+    }
+
+    /** Histórico de 90 dias do componente, derivado dos incidentes que o impactaram. */
+    private function history(int $componentId, Collection $incidents): array
+    {
+        $relevant = $incidents->filter(
+            fn (Incident $i) => $i->component_id === null || $i->component_id === $componentId
         );
-    }
 
-    /**
-     * Monta um componente: status atual (último dia do histórico), histórico
-     * de 90 dias e uptime calculado a partir dele.
-     *
-     * @param  array<int,ComponentStatus>  $badDays  offset (0 = 90 dias atrás) => status
-     */
-    private function component(string $name, array $badDays = []): array
-    {
-        $history = $this->history($badDays);
-
-        return [
-            'name' => $name,
-            'status' => end($history)['status'],
-            'history' => $history,
-            'uptime' => $this->uptime($history),
-        ];
-    }
-
-    /** @param array<int,ComponentStatus> $badDays */
-    private function history(array $badDays): array
-    {
         $start = Carbon::now()->subDays(self::HISTORY_DAYS - 1)->startOfDay();
         $days = [];
 
         for ($i = 0; $i < self::HISTORY_DAYS; $i++) {
-            $days[] = [
-                'date' => $start->copy()->addDays($i),
-                'status' => $badDays[$i] ?? ComponentStatus::Operational,
-            ];
+            $dayStart = $start->copy()->addDays($i);
+            $dayEnd = $dayStart->copy()->endOfDay();
+
+            $status = ComponentStatus::Operational;
+            foreach ($relevant as $incident) {
+                $from = $incident->started_at;
+                $to = $incident->resolved_at ?? Carbon::now();
+
+                if ($from->lte($dayEnd) && $to->gte($dayStart) && $incident->impact->severity() > $status->severity()) {
+                    $status = $incident->impact;
+                }
+            }
+
+            $days[] = ['date' => $dayStart, 'status' => $status];
         }
 
         return $days;
     }
 
-    /** Uptime % ponderado pela severidade de cada dia. */
     private function uptime(array $history): float
     {
-        $downtime = (new Collection($history))
-            ->sum(fn (array $day) => $day['status']->downtimeWeight());
+        $downtime = (new Collection($history))->sum(fn (array $day) => $day['status']->downtimeWeight());
 
         return round((1 - $downtime / count($history)) * 100, 2);
+    }
+
+    private function dateLabel(Carbon $date): string
+    {
+        $months = [1 => 'jan.', 'fev.', 'mar.', 'abr.', 'mai.', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
+
+        return sprintf(
+            '%s %s %s, %s',
+            $date->format('d'),
+            $months[(int) $date->format('n')],
+            $date->format('Y'),
+            $date->format('H:i')
+        );
+    }
+
+    private function durationLabel(Incident $incident): string
+    {
+        if (! $incident->isResolved()) {
+            return 'em andamento';
+        }
+
+        $minutes = (int) round($incident->started_at->diffInMinutes($incident->resolved_at));
+
+        if ($minutes < 60) {
+            return "{$minutes} min";
+        }
+
+        $h = intdiv($minutes, 60);
+        $m = $minutes % 60;
+
+        return $m ? "{$h} h {$m} min" : "{$h} h";
     }
 }
