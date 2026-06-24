@@ -114,6 +114,7 @@ saúde que outros sistemas (INTRANET) consomem.
 - **`deploy.sh` (updates):** fetch + ff-merge + composer/migrate/npm condicionais + caches. ⚠️ É **só UPDATE**: num clone já na HEAD do origin sai em "Nada novo" e **não** roda composer/npm — por isso a 1ª subida é o `setup.sh`.
 - **`.env` de produção:** `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://blue3.online`.
 - **Causa do HTTP 500 inicial (24/06):** `public/build` é gitignored; sem `npm run build` no servidor o `@vite` quebra → 500 (em branco com `APP_DEBUG=false`). Idem se faltar `vendor/` ou `APP_KEY`. Diagnóstico: conferir `public/build/manifest.json`, `vendor/autoload.php`, `APP_KEY` no `.env` e `storage/logs/laravel.log`.
+- **2º tropeço (permissões, 24/06):** `php artisan down` e os logs precisam de `storage/` gravável pelo `www-data`. O `deploy.sh` tentava isso antes de ajustar permissões → "Permission denied" no passo 2. Corrigido: `deploy.sh` normaliza `storage/` e `bootstrap/cache/` **antes** da manutenção (passo 1.5); `setup.sh` ajusta perms antes do `storage:link` (que roda como `APP_USER`). 1ª subida concluída via `setup.sh`.
 
 ## Referências
 

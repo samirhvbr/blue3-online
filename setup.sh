@@ -86,10 +86,12 @@ as_app npm ci --no-audit --no-fund --silent
 as_app npm run build
 
 # ── 5. Permissões + storage link ──────────────────────────────────────────────
-log "==> storage:link e permissões de storage/ e bootstrap/cache/..."
-as_web php artisan storage:link 2>/dev/null || true
+# Permissões PRIMEIRO: storage:link (e qualquer artisan) escreve em public/ e
+# pode logar em storage/. Só depois o symlink, como APP_USER (dono de public/).
+log "==> Permissões de storage/ e bootstrap/cache/ + storage:link..."
 chown -R "$APP_USER":"$WEB_USER" storage bootstrap/cache
 chmod -R g+w storage bootstrap/cache
+as_app php artisan storage:link 2>/dev/null || true
 
 # ── 6. Limpa caches (sem cachear config — o .env ainda será editado) ──────────
 log "==> Limpando caches..."

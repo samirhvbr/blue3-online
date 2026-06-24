@@ -1,7 +1,7 @@
 #!/bin/bash
 # versão 1.0 - 2026-06-24
 #
-# Deploy idempotente em /srv/www/blue3.online (ONLINE — página de status).
+# Deploy idempotente em /srv/www/online.blue3 (ONLINE — página de status).
 # Modelado no deploy.sh do WCUP/INTRANET. Pressupõe app Laravel (artisan/composer/npm).
 #
 # EXECUTAR COMO ROOT. O script delega cada operação ao usuário correto:
@@ -26,7 +26,7 @@
 #   DB_DATABASE / DB_USERNAME / DB_PASSWORD / DB_HOST - conexão MySQL padrão Laravel.
 #
 # Uso (sempre como root):
-#   bash /srv/www/blue3.online/deploy.sh
+#   bash /srv/www/online.blue3/deploy.sh
 #   DEPLOY_BRANCH=main bash deploy.sh   # forçar outro branch
 
 set -euo pipefail
@@ -135,6 +135,15 @@ CHANGED=$(as_app git diff --name-only "$LOCAL" "$REMOTE")
 
 # A partir daqui qualquer falha dispara cleanup.
 trap cleanup_on_failure ERR
+
+# ── 1.5 Garante storage/ e bootstrap/cache/ graváveis pelo web ────────────────
+# 'php artisan down' (passo 2) roda como WEB_USER e escreve em storage/framework/.
+# Numa 1ª subida ou após drift de permissão isso falha ("Permission denied") e o
+# deploy nem começa. Normaliza ANTES da manutenção. (O passo 7 repete após
+# composer/npm, que criam arquivos novos.)
+log "==> Garantindo permissões de storage/ e bootstrap/cache/..."
+chown -R "$APP_USER":"$WEB_USER" storage bootstrap/cache
+chmod -R g+w storage bootstrap/cache
 
 # ── 2. Modo manutenção ────────────────────────────────────────────────────────
 log "==> [2/8] Ativando modo de manutenção..."
