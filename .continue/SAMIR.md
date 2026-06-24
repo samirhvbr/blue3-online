@@ -7,3 +7,4 @@
 
 - vamos compartilhar essas informacoes com o projeto intranet, mostrando alerta la caso algo esteja com problema
 - vamos pensar em um script em bash para subir em servidor leve debian para monitoramente externo
+
