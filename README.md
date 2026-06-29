@@ -6,6 +6,16 @@ gerenciar componentes e incidentes.
 - **Stack:** Laravel 12 (PHP 8.x), Blade, Tailwind CSS.
 - **Páginas:** `/` (status público) · `/admin` (painel).
 
+## 🔄 Antes de começar: `git pull`
+
+**SEMPRE** verifique atualizações remotas antes de escrever ou alterar qualquer coisa neste repositório:
+
+```bash
+git pull          # já está pré-autorizado (allow)
+```
+
+Trabalhar sobre uma base desatualizada gera conflitos. Puxe primeiro, sempre. Para só inspecionar antes: `git fetch && git status`.
+
 ## Versão (`version.md`)
 
 A versão fica em **`version.md`** na raiz do projeto (versionado no git) e é lida via
