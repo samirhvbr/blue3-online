@@ -6,6 +6,8 @@
     <title>Status — Blue3</title>
     <meta name="description" content="Status em tempo real dos serviços e POPs da Blue3.">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Matomo Analytics (self-hosted) — só renderiza com MATOMO_* configurado. --}}
+    @include('partials.matomo')
 </head>
 <body class="min-h-screen bg-[#f6f8fa] text-slate-800 antialiased">
     <div class="mx-auto max-w-3xl px-4 py-10">
