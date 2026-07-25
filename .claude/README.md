@@ -33,7 +33,7 @@ Os três templates têm o **mesmo bloco de permissões**; mudam só `model` / `f
 | `fallbackModel` | — | `["opus"]` | `["opus","sonnet"]` |
 | Subagentes (`CLAUDE_CODE_SUBAGENT_MODEL`) | `opus` | `fable` | `fable` |
 | Effort `max` | `CLAUDE_CODE_EFFORT_LEVEL=max` | idem | idem |
-| Janela 1M | nativa (Opus 4.8) | nativa (Fable 5) | nativa (Fable 5) |
+| Janela 1M | nativa (Opus 5) | nativa (Fable 5) | nativa (Fable 5) |
 | Adaptive thinking | OFF | sempre ON¹ | sempre ON¹ |
 
 ¹ No Fable 5 o thinking é sempre adaptativo; `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING` não tem efeito.
@@ -41,7 +41,7 @@ Os três templates têm o **mesmo bloco de permissões**; mudam só `model` / `f
 ### Regras que vale lembrar
 - **Effort `max` vai por env** (`CLAUDE_CODE_EFFORT_LEVEL=max`). O campo `effortLevel`
   do JSON **só aceita** `low/medium/high/xhigh` — `max` ali é ignorado silenciosamente.
-- **1M é nativo** no Opus 4.8 e no Fable 5 (API Anthropic), sem flag. Para desligar
+- **1M é nativo** no Opus 5 e no Fable 5 (API Anthropic), sem flag. Para desligar
   bastaria `CLAUDE_CODE_DISABLE_1M_CONTEXT=1` (não usamos). No plano Max é incluso,
   zero créditos — **usar longe do limite**.
 - **Fable 5 / créditos:** incluso no Max até ~22/jun/2026; depois consome créditos
