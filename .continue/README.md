@@ -20,3 +20,15 @@ por migration, ambas vazias.
 ⚠️ **O brief tem tom de "quase pronto" e não deve ser lido como fila.** Quem abrir
 `SAMIR.md` achando que falta pouco vai se enganar: falta a metade que define o produto.
 Por isso ele saiu daqui.
+
+---
+
+## 📐 Convenção de documentação da frota
+
+Este repo segue a convenção única da casa: **`.continue/` é fila, `docs/` é o que já
+foi produzido.** Regra completa, com o gatilho de quando um vira o outro, o padrão de
+nome que carrega estado, o gate de deploy e a diferença entre roteiro `.md` e
+diagnóstico `.sh`:
+
+**→ `BLUE3-INTRANET/docs/CONVENCAO-DOCUMENTACAO.md`** *(fonte única — não copiar o
+conteúdo para cá; cópia vira segunda fonte de verdade)*
