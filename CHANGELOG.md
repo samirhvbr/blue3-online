@@ -13,6 +13,14 @@ não se reescreve.
 > reconstruí-las agora produziria uma história plausível, não uma verdadeira.
 
 
+## 0.1.17 - as permissoes seguem o repodocs: cinco comandos vao para o ask, sete regras saem do deny
+
+`rm -rf` e `curl`/`wget` com pipe para shell saem do `deny` e passam a pedir confirmacao
+(`ask`). A leitura de `.env`/`.env.*`, `git push --force`/`-f`, `git reset --hard` e
+`git clean -fd` saem do `deny`. As leituras de chave (`*.pem`, `*.key`, `*.p8`, `*.p12`,
+`*.pfx`) continuam bloqueadas. Decisao do dono em 24/09/2026, replicada do repodocs 1.17.0
+(ADR-028).
+
 ## 0.1.16 - o repositorio deixa de escolher o modelo
 
 `CLAUDE_CODE_SUBAGENT_MODEL` sai do `.claude/settings.json`. O modelo passa a ser escolha
