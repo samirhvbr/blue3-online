@@ -8,46 +8,44 @@ específico — aí valem o `.claude/` do projeto + o `~/.claude/` global.
 
 | Arquivo | Papel |
 |---------|-------|
-| `settings.json` | Perfil **ativo** (versionável). Hoje = Opus-only. |
+| `settings.json` | Config **ativa** (versionável): permissões e `effortLevel`. **Não escolhe modelo.** |
 | `settings.local.json` | Override local (gitignored). Acumula `allow` por sessão e **tem precedência** sobre o `settings.json`. |
-| `json-opus` | Template stand-by — **Opus-only**. |
-| `json-fable5-opus` | Template stand-by — **Fable 5** + fallback Opus. |
-| `json-fable5-opus-sonnet` | Template stand-by — **Fable 5** + fallback Opus → Sonnet. |
 
-**Trocar de perfil:** copie o template por cima do ativo e reinicie o Claude Code.
+**Trocar de modelo:** `/model`, na sessão — não existe arquivo pra copiar por cima do
+`settings.json`. Os templates stand-by `json-opus`, `json-fable5-opus` e
+`json-fable5-opus-sonnet` foram removidos em 24/09/2026 (ADR-027 do repodocs).
 
-```bash
-cp json-fable5-opus settings.json   # ex.: passa a usar Fable 5
-```
+> O `settings.local.json` tem precedência sobre o `settings.json` no que ambos
+> declaram — permissões e `env`. Modelo nenhum dos dois declara.
 
-> O `settings.local.json` tem precedência. Pra um perfil valer 100%, ajuste também o
-> bloco `env` dele (ou apague-o pra recriar do zero).
+## Modelo — escolha do usuário, e este repositório não a faz
 
-## Perfis de modelo
+**O modelo se escolhe com `/model`, por sessão.** Este repositório não escolhe nenhum:
+o `settings.json` não tem `model`, `fallbackModel` nem `availableModels`, e o `env` não
+carrega `ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_*_MODEL` nem `CLAUDE_CODE_SUBAGENT_MODEL`.
+**Subagente herda o modelo da sessão** — a ordem do Claude Code é modelo da chamada >
+`model` na definição do agente > `CLAUDE_CODE_SUBAGENT_MODEL` > modelo da sessão; sem
+nada definido, o subagente roda no modelo da sessão. Agente próprio em `.claude/agents/`
+diz `model: inherit`, ou não diz nada. Regra da casa: **ADR-027 do repodocs**
+(24/09/2026).
 
-Os três templates têm o **mesmo bloco de permissões**; mudam só `model` / `fallbackModel` / `env`:
-
-|  | Opus-only | Fable 5 + Opus | Fable 5 + Opus→Sonnet |
-|--|-----------|----------------|------------------------|
-| `model` | `opus` | `fable` | `fable` |
-| `fallbackModel` | — | `["opus"]` | `["opus","sonnet"]` |
-| Subagentes (`CLAUDE_CODE_SUBAGENT_MODEL`) | `opus` | `fable` | `fable` |
-| Effort `max` | `CLAUDE_CODE_EFFORT_LEVEL=max` | idem | idem |
-| Janela 1M | nativa (Opus 5) | nativa (Fable 5) | nativa (Fable 5) |
-| Adaptive thinking | OFF | sempre ON¹ | sempre ON¹ |
-
-¹ No Fable 5 o thinking é sempre adaptativo; `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING` não tem efeito.
+**Por que não pinar:** todo pin desses sobreviveu ao modelo que pinava. `opus[1m]`
+segurava a sessão na Opus anterior — a variante 1M só existia nela; os perfis stand-by
+prendiam Opus 4.8 / Fable 5 / Sonnet 4.6; `CLAUDE_CODE_SUBAGENT_MODEL=opus` mandava
+subagente pra Opus 5 enquanto a sessão já rodava a 5.5. E pin escrito aqui não vence os
+settings gerenciados da organização, que só um Owner edita.
 
 ### Regras que vale lembrar
 - **Effort `max` vai por env** (`CLAUDE_CODE_EFFORT_LEVEL=max`). O campo `effortLevel`
   do JSON **só aceita** `low/medium/high/xhigh` — `max` ali é ignorado silenciosamente.
-- **1M é nativo** no Opus 5 e no Fable 5 (API Anthropic), sem flag. Para desligar
-  bastaria `CLAUDE_CODE_DISABLE_1M_CONTEXT=1` (não usamos). No plano Max é incluso,
-  zero créditos — **usar longe do limite**.
+- **Janela de contexto é característica do modelo**, não deste repositório: depende do
+  que você escolher em `/model`. Onde 1M é nativo (API Anthropic), vale sem flag; para
+  desligar bastaria `CLAUDE_CODE_DISABLE_1M_CONTEXT=1` (não usamos). No plano Max é
+  incluso, zero créditos — **usar longe do limite**.
 - **Fable 5 / créditos:** incluso no Max até ~22/jun/2026; depois consome créditos
   (~$10/$50 por MTok, 2× o Opus). Requer Claude Code v2.1.170+. Confirme antes de rodar pesado.
 
-## Permissões (mesmo bloco em todos os perfis)
+## Permissões
 
 - `defaultMode: plan`.
 - **deny:** `rm -rf`, `git push --force/-f`, `git reset --hard`, `git clean -fd`,
@@ -60,9 +58,3 @@ Os três templates têm o **mesmo bloco de permissões**; mudam só `model` / `f
 
 > `mysql`/`mariadb` diretos são bloqueados de propósito: o Claude deve **gerar
 > migrations**, nunca rodar SQL na mão.
-
-> **Pendência:** os três `json-*` ainda têm `Bash(git push:*)` repetido em `allow` **e**
-> `ask`. Como `ask` vence `allow`, neles o push **pede confirmação** — diferente do
-> `settings.json` ativo, onde está só em `allow` (sobe direto). Pra alinhar, remova a
-> linha `"Bash(git push:*)"` do array `ask` dos três templates (o Claude não edita
-> regras de permissão em `.claude/` por segurança — faça à mão ou via `/update-config`).

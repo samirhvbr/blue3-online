@@ -13,6 +13,25 @@ não se reescreve.
 > reconstruí-las agora produziria uma história plausível, não uma verdadeira.
 
 
+## 0.1.16 - o repositorio deixa de escolher o modelo
+
+`CLAUDE_CODE_SUBAGENT_MODEL` sai do `.claude/settings.json`. O modelo passa a ser escolha
+do usuario, feita com `/model`, e o subagente herda: por padrao o Claude Code da ao
+subagente o modelo da sessao, e essa variavel era a unica coisa que o fazia diferente —
+com a sessao na Opus 5.5, os subagentes foram medidos na Opus 5, porque a variavel nomeia o
+alias `opus` e o alias ainda passa pelo pin das configuracoes gerenciadas da organizacao.
+
+Os 3 perfis stand-by (`json-fable5-opus`, `json-fable5-opus-sonnet`, `json-opus`) saem junto: existiam so para trocar o modelo sendo copiados
+por cima do `settings.json`, e fixavam modelos que o catalogo ja deixou para tras. Para
+recuperar um: `git show <este commit>^:.claude/<nome>`.
+
+`.claude/README.md` deixa(m) de descrever um perfil de modelo.
+
+Regra e medicao: ADR-027 do repodocs.
+
+Sem teste: configuracao e documentos. Conferido que o arquivo parseia e que a checagem
+do runbook §7 do repodocs fica em silencio aqui.
+
 ## 0.1.15 - o pin de modelo sai do .claude/settings.json
 
 Saem `"model": "opus[1m]"` e o pin de ambiente `ANTHROPIC_DEFAULT_OPUS_MODEL`.
