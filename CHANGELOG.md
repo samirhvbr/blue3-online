@@ -13,6 +13,20 @@ não se reescreve.
 > reconstruí-las agora produziria uma história plausível, não uma verdadeira.
 
 
+## 0.1.15 - o pin de modelo sai do .claude/settings.json
+
+Saem `"model": "opus[1m]"` e o pin de ambiente `ANTHROPIC_DEFAULT_OPUS_MODEL`.
+O sufixo de janela era pin de versao disfarçado — a variante 1M so existia na Opus
+anterior, entao toda sessao nascia nela enquanto o catalogo ja oferecia a mais nova.
+A variavel de ambiente e pior que um pin: redefine o que `opus` significa para tudo
+que le, inclusive o seletor de modelo.
+
+Nao desbloqueia nada sozinho: a camada que decide e a dos settings gerenciados pela
+conta, que vencem qualquer arquivo local. Regra, medicao e o que escrever no lugar
+(`"model": "opus55"`, versao nomeada): ADR-026 do repodocs.
+
+Sem teste: duas chaves de JSON e um comentario. Conferido que o arquivo ainda parseia.
+
 ## 0.1.14 - os hooks de git são regenerados a partir do repodocs
 
 Os dois hooks do padrão são reescritos a partir do repodocs, e o
